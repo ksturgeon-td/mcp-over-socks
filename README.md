@@ -9,6 +9,7 @@ Built using the **official MCP Go SDK** ([github.com/modelcontextprotocol/go-sdk
 - **SOCKS5 Proxy Support**: Connect to MCP servers through SOCKS5 proxies
   - `socks5://` - Local DNS resolution (resolve hostname before connecting)
   - `socks5h://` - Remote DNS resolution (let the proxy resolve the hostname)
+- **Custom HTTP Headers**: Inject static headers on every request (e.g. `Authorization`, `X-Tenant`)
 - **SSE Transport**: Full support for Server-Sent Events MCP transport
 - **Streamable HTTP Transport**: Support for Streamable HTTP MCP transport
 - **Auto-detection**: Automatically detects the transport type (SSE vs Streamable HTTP)
@@ -20,7 +21,7 @@ Built using the **official MCP Go SDK** ([github.com/modelcontextprotocol/go-sdk
 ### From Source
 
 ```bash
-git clone https://github.com/iiharu/mcp-over-socks.git
+git clone https://github.com/ksturgeon-td/mcp-over-socks.git
 cd mcp-over-socks
 make build
 ```
@@ -28,7 +29,7 @@ make build
 ### Using Go Install
 
 ```bash
-go install github.com/iiharu/mcp-over-socks/cmd/mcp-over-socks@latest
+go install github.com/ksturgeon-td/mcp-over-socks/cmd/mcp-over-socks@latest
 ```
 
 ## Usage
@@ -45,6 +46,16 @@ mcp-over-socks --proxy socks5h://localhost:1080 --server http://internal-server.
 
 Use `socks5h://` when the MCP server hostname is only resolvable within the remote network (e.g., internal DNS names).
 
+### Custom Headers
+
+Use `--header` (repeatable) to inject static headers on every request — useful for bearer tokens, tenant IDs, or any other authentication scheme:
+
+```bash
+mcp-over-socks --proxy socks5://localhost:1080 --server http://mcp.example.com/sse \
+  --header "Authorization: Bearer eyJhbGci..." \
+  --header "X-Tenant: acme"
+```
+
 ### Command Line Options
 
 ```
@@ -60,6 +71,7 @@ Optional:
   --timeout    Request timeout (default: 30s)
   --log        Log level: debug, info, error (default: info)
   --transport  Transport type: auto, sse, streamable (default: auto)
+  --header     Custom HTTP header, repeatable (e.g. --header "Authorization: Bearer token")
   --version    Show version and exit
   --help       Show this help message
 ```
@@ -76,6 +88,23 @@ Add to your `~/.cursor/mcp.json`:
       "args": [
         "--proxy", "socks5://localhost:1080",
         "--server", "http://your-mcp-server.example.com/sse"
+      ]
+    }
+  }
+}
+```
+
+With authentication headers:
+
+```json
+{
+  "mcpServers": {
+    "remote-mcp": {
+      "command": "/path/to/mcp-over-socks",
+      "args": [
+        "--proxy", "socks5://localhost:1080",
+        "--server", "http://your-mcp-server.example.com/sse",
+        "--header", "Authorization: Bearer your-token-here"
       ]
     }
   }

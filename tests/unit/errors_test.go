@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/iiharu/mcp-over-socks/internal/bridge"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/bridge"
 )
 
 func TestBridgeError(t *testing.T) {

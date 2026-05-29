@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iiharu/mcp-over-socks/internal/config"
-	"github.com/iiharu/mcp-over-socks/internal/logging"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/config"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/logging"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

@@ -189,3 +189,26 @@ func (d *SOCKSDialer) HTTPClient(timeout time.Duration) *http.Client {
 		Timeout:   timeout,
 	}
 }
+
+// headerTransport wraps an http.RoundTripper and injects static headers on every request.
+type headerTransport struct {
+	base    http.RoundTripper
+	headers map[string]string
+}
+
+func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	reqCopy := req.Clone(req.Context())
+	for k, v := range t.headers {
+		reqCopy.Header.Set(k, v)
+	}
+	return t.base.RoundTrip(reqCopy)
+}
+
+// HTTPClientWithHeaders creates an http.Client that uses the SOCKS dialer and injects static headers on every request.
+func (d *SOCKSDialer) HTTPClientWithHeaders(timeout time.Duration, headers map[string]string) *http.Client {
+	var rt http.RoundTripper = d.HTTPTransport()
+	if len(headers) > 0 {
+		rt = &headerTransport{base: rt, headers: headers}
+	}
+	return &http.Client{Transport: rt, Timeout: timeout}
+}

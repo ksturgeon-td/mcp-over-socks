@@ -24,6 +24,9 @@ type Config struct {
 
 	// LogLevel is the logging verbosity ("debug", "info", "error").
 	LogLevel string
+
+	// Headers are custom HTTP headers added to every request.
+	Headers map[string]string
 }
 
 // DefaultConfig returns a Config with default values.

@@ -3,7 +3,7 @@ package unit
 import (
 	"testing"
 
-	"github.com/iiharu/mcp-over-socks/internal/config"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/config"
 )
 
 func TestConfigValidation(t *testing.T) {

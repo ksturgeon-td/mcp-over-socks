@@ -1,4 +1,4 @@
-module github.com/iiharu/mcp-over-socks
+module github.com/ksturgeon-td/mcp-over-socks
 
 go 1.24.0
 

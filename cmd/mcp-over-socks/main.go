@@ -11,15 +11,24 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/iiharu/mcp-over-socks/internal/bridge"
-	"github.com/iiharu/mcp-over-socks/internal/config"
-	"github.com/iiharu/mcp-over-socks/internal/logging"
-	"github.com/iiharu/mcp-over-socks/internal/transport"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/bridge"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/config"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/logging"
+	"github.com/ksturgeon-td/mcp-over-socks/internal/transport"
 
 	"golang.org/x/net/proxy"
 )
 
 const version = "0.2.0"
+
+// headerFlags is a repeatable --header flag that accumulates "Name: Value" strings.
+type headerFlags []string
+
+func (h *headerFlags) String() string { return strings.Join(*h, ", ") }
+func (h *headerFlags) Set(value string) error {
+	*h = append(*h, value)
+	return nil
+}
 
 func main() {
 	// Define flags
@@ -30,6 +39,8 @@ func main() {
 	transportType := flag.String("transport", "auto", "Transport type: auto, sse, streamable")
 	showVersion := flag.Bool("version", false, "Show version and exit")
 	showHelp := flag.Bool("help", false, "Show help and exit")
+	var rawHeaders headerFlags
+	flag.Var(&rawHeaders, "header", "Custom HTTP header (repeatable, e.g. --header \"Authorization: Bearer token\")")
 
 	// Custom usage function
 	flag.Usage = func() {
@@ -45,11 +56,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  --timeout    Request timeout (default: 30s)\n")
 		fmt.Fprintf(os.Stderr, "  --log        Log level: debug, info, error (default: info)\n")
 		fmt.Fprintf(os.Stderr, "  --transport  Transport type: auto, sse, streamable (default: auto)\n")
+		fmt.Fprintf(os.Stderr, "  --header     Custom HTTP header, repeatable (e.g. --header \"Authorization: Bearer token\")\n")
 		fmt.Fprintf(os.Stderr, "  --version    Show version and exit\n")
 		fmt.Fprintf(os.Stderr, "  --help       Show this help message\n\n")
 		fmt.Fprintf(os.Stderr, "Examples:\n")
 		fmt.Fprintf(os.Stderr, "  mcp-over-socks --proxy socks5://localhost:1080 --server http://mcp.example.com/sse\n")
 		fmt.Fprintf(os.Stderr, "  mcp-over-socks --proxy socks5h://localhost:1080 --server http://internal.local/sse\n")
+		fmt.Fprintf(os.Stderr, "  mcp-over-socks --proxy socks5://localhost:1080 --server http://mcp.example.com/sse --header \"Authorization: Bearer token\"\n")
 	}
 
 	flag.Parse()
@@ -74,6 +87,18 @@ func main() {
 
 	// Create logger
 	logger := logging.New(logging.ParseLogLevel(cfg.LogLevel))
+
+	// Parse custom headers
+	headers := make(map[string]string, len(rawHeaders))
+	for _, h := range rawHeaders {
+		parts := strings.SplitN(h, ": ", 2)
+		if len(parts) != 2 {
+			logger.Error("Invalid header format %q (expected \"Name: Value\")", h)
+			os.Exit(1)
+		}
+		headers[parts[0]] = parts[1]
+	}
+	cfg.Headers = headers
 
 	// Validate config
 	if err := cfg.Validate(); err != nil {
@@ -109,7 +134,7 @@ func main() {
 	logger.Info("Using %s transport", tType)
 
 	// Create HTTP client with SOCKS proxy
-	httpClient := socksDialer.HTTPClient(cfg.Timeout)
+	httpClient := socksDialer.HTTPClientWithHeaders(cfg.Timeout, cfg.Headers)
 
 	// Create bridge
 	b := bridge.New(cfg, httpClient, logger, tType)
